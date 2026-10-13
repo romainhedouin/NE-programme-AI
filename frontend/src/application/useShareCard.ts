@@ -7,7 +7,7 @@ function slugify(text: string): string {
   return (
     text
       .normalize("NFD")
-      .replace(/[̀-ͯ]/g, "")
+      .replace(/[\u0300-\u036f]/g, "")
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-|-$/g, "")
@@ -50,7 +50,7 @@ export function useShareCard(card: Ref<ShareCard | null>) {
       } catch (e) {
         status.value = e instanceof Error ? e.message : "Impossible de créer l’image.";
       } finally {
-        rendering.value = false;
+        if (card.value === next || !card.value) rendering.value = false;
       }
     },
     { immediate: true },
@@ -72,8 +72,6 @@ export function useShareCard(card: Ref<ShareCard | null>) {
     a.click();
   }
 
-  // Appels clipboard / share / window.open lancés sans await préalable :
-  // les navigateurs exigent qu'ils partent directement du clic.
   async function copyImage(blob: Blob): Promise<boolean> {
     try {
       await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
@@ -112,7 +110,7 @@ export function useShareCard(card: Ref<ShareCard | null>) {
     if (opened) opened.opener = null;
     const action = replyId.value ? "votre réponse" : "votre post";
     status.value = copied
-      ? `Image copiée : collez-la (Ctrl+V / ⌘+V) dans ${action} sur X.`
+      ? `Image copiée : collez-la (Ctrl+V / ⌘V) dans ${action} sur X.`
       : `Image téléchargée : ajoutez-la à ${action} sur X.`;
     if (!opened) fallbackLink.value = url;
   }
@@ -122,7 +120,7 @@ export function useShareCard(card: Ref<ShareCard | null>) {
     if (!blob) return;
     fallbackLink.value = null;
     if (await copyImage(blob)) {
-      status.value = "Image copiée : collez-la (Ctrl+V / ⌘+V) où vous voulez.";
+      status.value = "Image copiée : collez-la (Ctrl+V / ⌘V) où vous voulez.";
     } else {
       download();
       status.value = "Copie d’image impossible sur ce navigateur : image téléchargée.";
