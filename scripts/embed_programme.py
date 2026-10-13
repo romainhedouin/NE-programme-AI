@@ -96,7 +96,7 @@ def main() -> None:
     todo = [i for i, h in enumerate(hashes) if h not in cache]
     print(
         f"{len(texts)} passages : {len(texts) - len(todo)} réutilisés, "
-        f"{len(todo)} à calculer ({model}), lots de {BATCH_SIZE}..."
+        f"{len(todo)} à calculer ({model}), lots de {BATCH_SIZE}…"
     )
 
     if todo:
@@ -130,7 +130,7 @@ def main() -> None:
     }
     OUT_META.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"Écrit {OUT_NPZ} ({matrix.shape[0]} × {matrix.shape[1]})")
-    print(f"Meta  {OUT_META}")
+    print(f"Métadonnées : {OUT_META}")
 
 
 if __name__ == "__main__":

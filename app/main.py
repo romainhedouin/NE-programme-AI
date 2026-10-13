@@ -124,7 +124,7 @@ def health() -> dict:
 
 @app.post("/api/search", response_model=SearchResponse)
 def api_search(body: QueryRequest, request: Request) -> SearchResponse:
-    """Recherche dans le programme (sans LLM) — lexical + embeddings si dispo."""
+    """Recherche dans le programme (sans LLM) — lexical + embeddings si disponibles."""
     check_search(request)
     chunks = search(body.question.strip(), top_k=12)
     retrieval = chunks[0]["retrieval"] if chunks else (

@@ -16,6 +16,12 @@ const props = defineProps<{
   question: string;
 }>();
 
+const RETRIEVAL_LABELS: Record<RetrievalMode, string> = {
+  hybrid: "hybride",
+  semantic: "sémantique",
+  lexical: "lexicale",
+};
+
 const answerHtml = computed(() =>
   props.answer ? renderMarkdown(props.answer, props.sources.length) : "",
 );
@@ -96,8 +102,10 @@ onBeforeUnmount(() => {
     </div>
 
     <p v-if="retrieval && !error" class="retrieval">
-      Récupération : {{ retrieval }}
-      <template v-if="mode === 'search'"> · {{ sources.length }} résultat(s)</template>
+      Méthode de recherche&nbsp;: {{ RETRIEVAL_LABELS[retrieval] }}
+      <template v-if="mode === 'search'">
+        · {{ sources.length }} {{ sources.length > 1 ? "résultats" : "résultat" }}
+      </template>
     </p>
 
     <SharePanel

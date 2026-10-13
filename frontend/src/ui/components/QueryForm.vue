@@ -40,8 +40,8 @@ function pick(suggestion: string) {
         :value="modelValue"
         :placeholder="
           mode === 'ask'
-            ? 'Ex. Que propose-t-il sur la sécurité ? Sur l’école ? Ou collez une critique lue sur X pour vérifier ce que dit le programme.'
-            : 'Ex. police municipale, capitalisation retraite, carte scolaire…'
+            ? 'Ex.\u00a0: Que propose-t-il sur la sécurité\u00a0? Sur l’école\u00a0? Ou collez une critique lue sur X pour vérifier ce que dit le programme.'
+            : 'Ex.\u00a0: police municipale, capitalisation retraite, carte scolaire…'
         "
         @input="emit('update:modelValue', ($event.target as HTMLTextAreaElement).value)"
       />
@@ -53,8 +53,8 @@ function pick(suggestion: string) {
         {{
           loading
             ? mode === "ask"
-              ? "Recherche…"
-              : "Indexation…"
+              ? "Réponse en cours…"
+              : "Recherche…"
             : mode === "ask"
               ? "Demander"
               : "Chercher"

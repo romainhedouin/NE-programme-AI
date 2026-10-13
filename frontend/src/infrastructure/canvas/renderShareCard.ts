@@ -25,7 +25,7 @@ function setSpacing(ctx: Ctx, px: number) {
 function wrap(ctx: Ctx, text: string, maxWidth: number): string[] {
   const lines: string[] = [];
   let line = "";
-  for (const word of text.split(/\s+/)) {
+  for (const word of text.split(/[ \t\n]+/)) {
     const next = line ? `${line} ${word}` : word;
     if (line && ctx.measureText(next).width > maxWidth) {
       lines.push(line);
@@ -154,19 +154,19 @@ function drawFooter(ctx: Ctx, card: ShareCard, siteHost: string) {
   const textWidth = ctaX - PAD - 28;
   ctx.font = font(700, 23);
   ctx.fillStyle = "rgba(255, 255, 255, 0.92)";
-  ctx.fillText(ellipsize(ctx, `Source : ${card.sourceTitle}`, textWidth), PAD, baseY - 28);
+  ctx.fillText(ellipsize(ctx, `Source\u00a0: ${card.sourceTitle}`, textWidth), PAD, baseY - 28);
 
   // Lien court vers la source, à taper ou recopier (une image n'est pas cliquable)
   ctx.font = font(700, 20);
   ctx.fillStyle = GOLD;
   const sourceLink = card.sourceShortPath
-    ? `Vérifier : ${siteHost}${card.sourceShortPath}`
-    : "Vérifier : unenouvelleenergie.fr";
+    ? `Vérifier\u00a0: ${siteHost}${card.sourceShortPath}`
+    : "Vérifier\u00a0: unenouvelleenergie.fr";
   ctx.fillText(ellipsize(ctx, sourceLink, textWidth), PAD, baseY + 2);
 
   ctx.font = font(500, 14);
   ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
-  ctx.fillText("Outil citoyen non officiel · réponses tirées de unenouvelleenergie.fr", PAD, CARD_HEIGHT - 20);
+  ctx.fillText("Outil citoyen non officiel · réponses tirées du site unenouvelleenergie.fr", PAD, CARD_HEIGHT - 20);
 }
 
 async function loadFonts() {
@@ -201,7 +201,7 @@ export async function renderShareCard(card: ShareCard, siteHost: string): Promis
   y += 42;
   ctx.font = font(600, 30);
   ctx.fillStyle = "rgba(255, 255, 255, 0.78)";
-  const questionLines = clampLines(ctx, `« ${truncate(card.question, 240)} »`, innerWidth, 2);
+  const questionLines = clampLines(ctx, `«\u00a0${truncate(card.question, 240)}\u00a0»`, innerWidth, 2);
   for (const line of questionLines) {
     ctx.fillText(line, PAD, y);
     y += 38;
@@ -225,7 +225,7 @@ export async function renderShareCard(card: ShareCard, siteHost: string): Promis
 
   return new Promise((resolve, reject) => {
     canvas.toBlob(
-      (blob) => (blob ? resolve(blob) : reject(new Error("Échec de la création de l'image."))),
+      (blob) => (blob ? resolve(blob) : reject(new Error("Échec de la création de l’image."))),
       "image/png",
     );
   });

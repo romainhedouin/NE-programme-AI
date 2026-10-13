@@ -13,7 +13,7 @@ import { ABOUT_HASH, GITHUB_URL } from "@ui/siteLinks";
         </div>
         <div>
           <strong>Questions sourcées</strong>
-          <p>Outil open-source d’interrogation du programme officiel.</p>
+          <p>Outil open source pour interroger le programme officiel.</p>
         </div>
       </div>
 

@@ -29,14 +29,14 @@ const { health, loading, error } = useHealth();
         <h3>D’où viennent les réponses</h3>
         <p>
           Seules les pages «&nbsp;Notre programme&nbsp;» et «&nbsp;Questions&nbsp;» du site
-          officiel sont utilisées. Le mode «&nbsp;Chercher&nbsp;» affiche les passages tels quels ;
+          officiel sont utilisées. Le mode «&nbsp;Chercher&nbsp;» affiche les passages tels quels&nbsp;;
           le mode «&nbsp;Demander&nbsp;» en rédige une synthèse, sans autre source.
         </p>
 
         <h3>Vos données</h3>
         <p>
           Nous ne stockons aucune donnée. Aucun compte n’est nécessaire, aucun cookie n’est
-          déposé, et vos questions comme les réponses ne sont enregistrées nulle part.
+          déposé, et ni vos questions ni les réponses ne sont enregistrées.
         </p>
 
         <h3>Mistral AI</h3>
@@ -49,8 +49,8 @@ const { health, loading, error } = useHealth();
 
         <h3>Limites</h3>
         <p>
-          Une IA peut mal résumer : vérifiez toujours la source citée. Cet outil n’est ni affilié
-          au parti ni son site officiel, et le nombre de questions est limité par jour.
+          Une IA peut mal résumer : vérifiez toujours la source citée. Cet outil n’est pas le
+          site officiel du parti et n’y est pas affilié, et le nombre de questions est limité par jour.
         </p>
 
         <h3>Open source</h3>

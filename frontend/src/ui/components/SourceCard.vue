@@ -6,24 +6,27 @@ defineProps<{
   /** Numéro du renvoi [n] dans la réponse (mode « Demander »). */
   index?: number;
 }>();
+
+const decimal = (value: number) => String(value).replace(".", ",");
 </script>
 
 <template>
   <li class="card">
     <p class="meta">
       <span v-if="index" class="badge">{{ index }}</span>
-      {{ source.pageTitle }} — {{ source.section }} — paragraphe
-      {{ source.paragraph }}
+      {{ source.pageTitle }}
+      <template v-if="source.section !== source.pageTitle"> — {{ source.section }}</template>
+      — paragraphe {{ source.paragraph }}
     </p>
     <p
       v-if="source.scoreSemantic != null || source.scoreLexical != null"
       class="scores"
     >
       <span v-if="source.scoreSemantic != null"
-        >sémantique {{ source.scoreSemantic }}</span
+        >score sémantique&nbsp;: {{ decimal(source.scoreSemantic) }}</span
       >
       <span v-if="source.scoreLexical != null"
-        >lexical {{ source.scoreLexical }}</span
+        >score lexical&nbsp;: {{ decimal(source.scoreLexical) }}</span
       >
     </p>
     <p class="excerpt">{{ source.excerpt }}</p>
