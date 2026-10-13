@@ -6,15 +6,16 @@ import hashlib
 import os
 from functools import lru_cache
 from pathlib import Path
+from typing import Annotated
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from mistralai.client import Mistral
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, StringConstraints
 
-from app.limits import CHAT_MAX_TOKENS, check_chat, check_search
+from app.limits import CHAT_MAX_TOKENS, ChatQuota, chat_quota, check_search
 from app.prompts import SYSTEM_PROMPT, build_user_prompt
 from app.retrieve import embeddings_status, load_corpus, search
 
@@ -27,7 +28,7 @@ app = FastAPI(title="Programme Lisnard — questions sourcées", version="0.3.0"
 
 
 class QueryRequest(BaseModel):
-    question: str = Field(..., min_length=3, max_length=1000)
+    question: Annotated[str, StringConstraints(strip_whitespace=True, min_length=3, max_length=1000)]
 
 
 class SourceOut(BaseModel):
@@ -135,8 +136,11 @@ def api_search(body: QueryRequest, request: Request) -> SearchResponse:
 
 @app.post("/api/chat", response_model=ChatResponse)
 def chat(body: QueryRequest, request: Request) -> ChatResponse:
-    check_chat(request)
-    question = body.question.strip()
+    with chat_quota(request) as quota:
+        return _answer(body.question, quota)
+
+
+def _answer(question: str, quota: ChatQuota) -> ChatResponse:
     chunks = search(question, top_k=8)
     model = os.getenv("MISTRAL_MODEL", "mistral-small-latest")
     sources = to_sources(chunks)
@@ -165,6 +169,7 @@ def chat(body: QueryRequest, request: Request) -> ChatResponse:
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=502, detail=f"Erreur Mistral : {exc}") from exc
 
+    quota.confirm()
     choice = completion.choices[0]
     answer = (choice.message.content or "").strip()
     if str(choice.finish_reason).lower().endswith("length"):

@@ -10,6 +10,8 @@ import os
 import threading
 import time
 from collections import deque
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import date
 from pathlib import Path
 
@@ -101,7 +103,33 @@ def check_search(request: Request) -> None:
         _record(ip, "search", 60, now)
 
 
-def check_chat(request: Request) -> None:
+class ChatQuota:
+    """Question réservée ; rendue à la sortie du `with` tant que `confirm()` n'a pas été appelé."""
+
+    def __init__(self, ip: str, now: float, day: date) -> None:
+        self.ip, self.now, self.day = ip, now, day
+        self.used = False
+
+    def confirm(self) -> None:
+        self.used = True
+
+
+def _refund_chat(quota: ChatQuota) -> None:
+    global _global_chat_count
+    with _lock:
+        for window in (60, 86400):
+            key = (quota.ip, "chat", window)
+            hits = _hits.get(key)
+            if hits and quota.now in hits:
+                hits.remove(quota.now)
+                if not hits:
+                    del _hits[key]
+        if quota.day == _global_day and _global_chat_count > 0:
+            _global_chat_count -= 1
+
+
+@contextmanager
+def chat_quota(request: Request) -> Iterator[ChatQuota]:
     global _global_day, _global_chat_count
     ip = client_ip(request)
     now = time.monotonic()
@@ -127,3 +155,9 @@ def check_chat(request: Request) -> None:
         _record(ip, "chat", 60, now)
         _record(ip, "chat", 86400, now)
         _global_chat_count += 1
+        quota = ChatQuota(ip, now, today)
+    try:
+        yield quota
+    finally:
+        if not quota.used:
+            _refund_chat(quota)
