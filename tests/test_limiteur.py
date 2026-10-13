@@ -113,3 +113,14 @@ def test_chat_quota_only_counts_completions(monkeypatch, question, chunks, clien
     response = TestClient(main.app).post("/api/chat", json={"question": question})
     assert response.status_code == status
     assert quota_used() == used
+
+
+@pytest.mark.parametrize("setting", ["CHAT_GLOBAL_PER_DAY", "CHAT_PER_DAY"])
+def test_quota_messages_typography(monkeypatch, setting):
+    monkeypatch.setattr(limits, setting, 0)
+    with pytest.raises(HTTPException) as exc:
+        check_chat(make_request("10.0.0.1"))
+    detail = exc.value.detail
+    assert "'" not in detail
+    assert "«\u00a0Chercher\u00a0»" in detail
+    assert ("dernières 24 heures" in detail) == (setting == "CHAT_PER_DAY")

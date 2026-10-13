@@ -140,8 +140,8 @@ def chat_quota(request: Request) -> Iterator[ChatQuota]:
             _global_day, _global_chat_count = today, 0
         if _global_chat_count >= CHAT_GLOBAL_PER_DAY:
             raise _too_many(
-                "Le service a atteint son quota de questions pour aujourd'hui. "
-                "Le mode « Chercher » reste disponible."
+                "Le service a atteint son quota de questions pour aujourd’hui. "
+                "Le mode « Chercher » reste disponible."
             )
         minute = _window(ip, "chat", 60, now)
         day = _window(ip, "chat", 86400, now)
@@ -149,8 +149,8 @@ def chat_quota(request: Request) -> Iterator[ChatQuota]:
             raise _too_many("Trop de questions en peu de temps. Réessayez dans une minute.")
         if len(day) >= CHAT_PER_DAY:
             raise _too_many(
-                "Vous avez atteint la limite de questions pour aujourd'hui. "
-                "Le mode « Chercher » reste disponible."
+                "Vous avez atteint la limite de questions au cours des dernières 24 heures. "
+                "Le mode « Chercher » reste disponible."
             )
         _record(ip, "chat", 60, now)
         _record(ip, "chat", 86400, now)
