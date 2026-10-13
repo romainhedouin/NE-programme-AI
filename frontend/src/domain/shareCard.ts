@@ -9,7 +9,7 @@ const HEADLINE_MAX = 220;
 const POST_MAX = 280;
 // X compte toute URL pour 23 caractères (t.co)
 const X_URL_LENGTH = 23;
-const POST_SOURCE_PREFIX = "\n\nSource officielle : ";
+const POST_SOURCE_PREFIX = "\n\nSource officielle\u00A0: ";
 const POST_HASHTAG_SUFFIX = `\n\n${HASHTAG}`;
 
 const EN_BREF = /^[\s>*_-]*en bref\s*[*_]*\s*:\s*[*_]*\s*(.+)$/im;
@@ -26,8 +26,11 @@ export function toPlainText(markdown: string): string {
     .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
     .replace(/^\s{0,3}(#{1,6}|>|[-*+]|\d+[.)])\s+/gm, "")
     .replace(/\*\*|__|[*`]/g, "")
-    .replace(/\s+/g, " ")
-    .replace(/\s+([.,;:!?)])/g, "$1")
+    .replace(/[^\S\u00A0]+/g, " ")
+    .replace(/[ \u00A0]+([.,)])/g, "$1")
+    .replace(/([^\s.,;:!?])[ \u00A0]*([:;!?]+)(?=[\s»)]|$)/g, "$1\u00A0$2")
+    .replace(/«\s*/g, "«\u00A0")
+    .replace(/\s*»/g, "\u00A0»")
     .trim();
 }
 
@@ -46,7 +49,7 @@ export function extractHeadline(answer: string): string {
     if (text) return truncate(text, HEADLINE_MAX);
   }
   // Phrases du début jusqu'à un résumé d'au moins ~100 caractères
-  const sentences = toPlainText(answer.replace(EN_BREF, "")).match(/[^.!?]+(?:[.!?]+|$)/g) ?? [];
+  const sentences = toPlainText(answer.replace(EN_BREF, "")).split(/(?<=[.!?]) (?=[A-ZÀ-Ý«])/);
   let summary = "";
   for (const sentence of sentences) {
     if (summary.length >= 100) break;
