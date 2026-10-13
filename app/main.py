@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 import os
 from functools import lru_cache
 from pathlib import Path
@@ -17,6 +18,8 @@ from pydantic import BaseModel, Field
 from app.limits import CHAT_MAX_TOKENS, check_chat, check_search
 from app.prompts import SYSTEM_PROMPT, build_user_prompt
 from app.retrieve import embeddings_status, load_corpus, search
+
+logger = logging.getLogger(__name__)
 
 ROOT = Path(__file__).resolve().parents[1]
 load_dotenv(ROOT / ".env", override=True)
@@ -62,7 +65,7 @@ def mistral_client() -> Mistral:
     if not key or key.startswith("your_"):
         raise HTTPException(
             status_code=503,
-            detail="MISTRAL_API_KEY manquante. Copiez .env.example vers .env et renseignez la clé.",
+            detail="Le mode «\u00a0Demander\u00a0» est momentanément indisponible.",
         )
     return Mistral(api_key=key)
 
@@ -118,8 +121,9 @@ def health() -> dict:
             "has_api_key": _has_api_key(),
             "embeddings": emb,
         }
-    except FileNotFoundError as exc:
-        return {"ok": False, "error": str(exc)}
+    except FileNotFoundError:
+        logger.exception("Corpus introuvable")
+        return {"ok": False, "error": "Corpus indisponible."}
 
 
 @app.post("/api/search", response_model=SearchResponse)
@@ -163,7 +167,11 @@ def chat(body: QueryRequest, request: Request) -> ChatResponse:
             ],
         )
     except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=502, detail=f"Erreur Mistral : {exc}") from exc
+        logger.exception("Erreur Mistral")
+        raise HTTPException(
+            status_code=502,
+            detail="Le service de rédaction est momentanément indisponible. Réessayez plus tard.",
+        ) from exc
 
     choice = completion.choices[0]
     answer = (choice.message.content or "").strip()
@@ -207,7 +215,10 @@ def index() -> FileResponse:
 @app.get("/{filename}")
 def public_file(filename: str) -> FileResponse:
     """Fichiers de frontend/public copiés à la racine du build (favicons…)."""
-    path = (DIST_DIR / filename).resolve()
+    try:
+        path = (DIST_DIR / filename).resolve()
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Introuvable.") from None
     if path.parent != DIST_DIR.resolve() or not path.is_file():
         raise HTTPException(status_code=404, detail="Introuvable.")
     return FileResponse(path)
