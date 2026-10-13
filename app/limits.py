@@ -5,6 +5,7 @@ Compteurs en mémoire : valables pour une instance unique (remis à zéro au red
 
 from __future__ import annotations
 
+import ipaddress
 import os
 import threading
 import time
@@ -39,13 +40,26 @@ _global_day = date.today()
 _global_chat_count = 0
 
 
+def _bucket_ip(raw: str) -> str:
+    try:
+        addr = ipaddress.ip_address(raw)
+    except ValueError:
+        return raw
+    if addr.version == 4:
+        return raw
+    if addr.ipv4_mapped:
+        return str(addr.ipv4_mapped)
+    # Un abonné IPv6 dispose d'un /64 entier : on limite par préfixe, pas par adresse.
+    return f"{ipaddress.IPv6Address(int(addr) >> 64 << 64)}/64"
+
+
 def client_ip(request: Request) -> str:
     # Derrière le proxy Railway : l'IP ajoutée par le proxy est la dernière
     # de X-Forwarded-For (les précédentes peuvent être forgées par le client).
     forwarded = request.headers.get("x-forwarded-for", "")
     if forwarded:
-        return forwarded.split(",")[-1].strip()
-    return request.client.host if request.client else "inconnu"
+        return _bucket_ip(forwarded.split(",")[-1].strip())
+    return _bucket_ip(request.client.host) if request.client else "inconnu"
 
 
 def _window(ip: str, bucket: str, window: int, now: float) -> deque[float]:

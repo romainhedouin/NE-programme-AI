@@ -48,3 +48,17 @@ def test_limit_still_applies(clock):
     limits.check_chat(make_request("10.0.0.2"))
     clock[0] += 61
     limits.check_chat(make_request("10.0.0.1"))
+
+
+def test_ipv6_addresses_of_one_64_share_a_bucket():
+    for i in range(limits.CHAT_PER_MINUTE):
+        limits.check_chat(make_request(f"2001:db8:1:2::{i + 1:x}"))
+    with pytest.raises(HTTPException):
+        limits.check_chat(make_request("2001:db8:1:2:aaaa:bbbb:cccc:dddd"))
+    limits.check_chat(make_request("2001:db8:1:3::1"))
+
+
+def test_ipv4_unchanged_and_mapped_ipv4_not_collapsed():
+    assert limits.client_ip(make_request("203.0.113.7")) == "203.0.113.7"
+    assert limits.client_ip(make_request("::ffff:203.0.113.7")) == "203.0.113.7"
+    assert limits.client_ip(make_request("not-an-ip")) == "not-an-ip"
