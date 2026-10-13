@@ -161,11 +161,14 @@ def _lexical_index() -> dict:
     return {"docs": docs, "idf": idf, "avg_len": avg_len}
 
 
+MAX_QUERY_TOKENS = 24
+
+
 def _lexical_ranked(query: str) -> list[tuple[str, float]]:
     """BM25 : un terme rare (« ia ») pèse bien plus qu'un terme fréquent."""
     index = _lexical_index()
     idf = index["idf"]
-    q_tokens = list(dict.fromkeys(tokenize(query)))
+    q_tokens = list(dict.fromkeys(tokenize(query)))[:MAX_QUERY_TOKENS]
     if not q_tokens:
         return []
 
