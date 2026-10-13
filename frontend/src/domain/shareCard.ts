@@ -71,10 +71,6 @@ export function extractSource(
     const url = tag.match(URL_RE)?.[0].replace(/[.,;]+$/, "");
     const known = url ? sources.find((s) => s.url === url) : undefined;
     if (known) return { title: known.pageTitle, url: known.url, shortPath: known.shortPath };
-    if (url) {
-      const title = tag.replace(/^\[Source\s*:\s*/i, "").split(/\s+—\s+/)[0].trim();
-      return { title: title || "Programme officiel", url, shortPath: null };
-    }
   }
   const first = sources[0];
   return first
