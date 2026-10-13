@@ -14,8 +14,11 @@ export function useProgrammeQuery() {
   const hasResult = ref(false);
   const found = ref(false);
   const askedQuestion = ref("");
+  let seq = 0;
 
   function setMode(next: QueryMode) {
+    seq++;
+    loading.value = false;
     mode.value = next;
     error.value = null;
     answer.value = null;
@@ -29,6 +32,7 @@ export function useProgrammeQuery() {
     const q = query.value.trim();
     if (q.length < 3 || loading.value) return;
 
+    const id = ++seq;
     loading.value = true;
     error.value = null;
     hasResult.value = false;
@@ -41,12 +45,14 @@ export function useProgrammeQuery() {
     try {
       if (mode.value === "ask") {
         const result: ChatResult = await programmeRepository.ask(q);
+        if (id !== seq) return;
         answer.value = result.answer;
         sources.value = result.sources;
         retrieval.value = result.retrieval;
         found.value = result.found;
       } else {
         const result = await programmeRepository.search(q);
+        if (id !== seq) return;
         sources.value = result.results;
         retrieval.value = result.retrieval;
         if (!result.results.length) {
@@ -55,6 +61,7 @@ export function useProgrammeQuery() {
       }
       hasResult.value = true;
     } catch (e) {
+      if (id !== seq) return;
       error.value =
         e instanceof ApiError
           ? e.message
@@ -63,7 +70,7 @@ export function useProgrammeQuery() {
             : "Impossible de joindre l’API.";
       hasResult.value = true;
     } finally {
-      loading.value = false;
+      if (id === seq) loading.value = false;
     }
   }
 
