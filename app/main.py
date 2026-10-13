@@ -23,7 +23,38 @@ load_dotenv(ROOT / ".env", override=True)
 
 DIST_DIR = ROOT / "frontend" / "dist"
 
-app = FastAPI(title="Programme Lisnard — questions sourcées", version="0.3.0")
+app = FastAPI(
+    title="Programme Lisnard — questions sourcées",
+    version="0.3.0",
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None,
+)
+
+SECURITY_HEADERS = {
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "X-Frame-Options": "DENY",
+    "Content-Security-Policy": (
+        "default-src 'self'; "
+        "script-src 'self'; "
+        "style-src 'self' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "img-src 'self' blob:; "
+        "connect-src 'self'; "
+        "object-src 'none'; "
+        "base-uri 'self'; "
+        "form-action 'self'; "
+        "frame-ancestors 'none'"
+    ),
+}
+
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers.update(SECURITY_HEADERS)
+    return response
 
 
 class QueryRequest(BaseModel):
