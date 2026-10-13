@@ -2,6 +2,7 @@ from types import SimpleNamespace
 
 import pytest
 from fastapi.testclient import TestClient
+from mistralai.client.models import AssistantMessage, TextChunk, ThinkChunk
 
 import app.main as main
 import app.mistral_client as mistral_client
@@ -69,3 +70,37 @@ def test_cle_absente_puis_definie_plus_tard(built, monkeypatch):
     monkeypatch.setenv("MISTRAL_API_KEY", "cle-de-test")
     assert api.post("/api/chat", json={"question": "Que propose le programme ?"}).status_code == 200
     assert len(built) == 1
+
+
+def _chat(monkeypatch, content):
+    completion = SimpleNamespace(
+        choices=[SimpleNamespace(message=AssistantMessage(content=content), finish_reason="stop")]
+    )
+    client = SimpleNamespace(chat=SimpleNamespace(complete=lambda **kwargs: completion))
+    monkeypatch.setattr(main, "mistral_client", lambda: client)
+    monkeypatch.setattr(main, "search", lambda question, top_k: [CHUNK])
+    monkeypatch.setattr(main, "check_chat", lambda request: None)
+    api = TestClient(main.app, raise_server_exceptions=False)
+    return api.post("/api/chat", json={"question": "Que propose le programme ?"})
+
+
+def test_reponse_en_morceaux_de_contenu(monkeypatch):
+    content = [
+        ThinkChunk(thinking=[TextChunk(text="je réfléchis")]),
+        TextChunk(text="Voici "),
+        TextChunk(text="la réponse."),
+    ]
+    resp = _chat(monkeypatch, content)
+
+    assert resp.status_code == 200
+    assert resp.json()["answer"] == "Voici la réponse."
+    assert resp.json()["found"] is True
+
+
+@pytest.mark.parametrize("content", [[], "   ", [ThinkChunk(thinking=[TextChunk(text="...")])]])
+def test_reponse_vide_traitee_comme_introuvable(monkeypatch, content):
+    resp = _chat(monkeypatch, content)
+
+    assert resp.status_code == 200
+    assert resp.json()["answer"] == "Aucune réponse trouvée dans le programme officiel."
+    assert resp.json()["found"] is False

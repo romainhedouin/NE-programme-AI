@@ -73,6 +73,13 @@ def _has_api_key() -> bool:
     return bool(key) and not key.startswith("your_")
 
 
+def _message_text(content) -> str:
+    """Texte d'une réponse Mistral : chaîne, ou liste de morceaux (le texte seul est gardé)."""
+    if isinstance(content, list):
+        return "".join(getattr(chunk, "text", "") for chunk in content)
+    return content or ""
+
+
 def short_code(url: str) -> str:
     """Code court stable d'une page source (sans stockage : dérivé de l'URL)."""
     return hashlib.sha1(url.encode("utf-8")).hexdigest()[:6]
@@ -167,8 +174,10 @@ def chat(body: QueryRequest, request: Request) -> ChatResponse:
         raise HTTPException(status_code=502, detail=f"Erreur Mistral : {exc}") from exc
 
     choice = completion.choices[0]
-    answer = (choice.message.content or "").strip()
-    if str(choice.finish_reason).lower().endswith("length"):
+    answer = _message_text(choice.message.content).strip()
+    if not answer:
+        answer = "Aucune réponse trouvée dans le programme officiel."
+    elif str(choice.finish_reason).lower().endswith("length"):
         answer += "…\n\n*Réponse interrompue : limite de longueur atteinte.*"
     found = "aucune réponse trouvée" not in answer.lower()
     return ChatResponse(
