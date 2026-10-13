@@ -60,7 +60,7 @@ export function useProgrammeQuery() {
           ? e.message
           : e instanceof Error
             ? e.message
-            : "Impossible de joindre l’API.";
+            : "Serveur injoignable. Réessayez dans un instant.";
       hasResult.value = true;
     } finally {
       loading.value = false;

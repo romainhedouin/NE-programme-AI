@@ -13,11 +13,11 @@ export function useHealth() {
     try {
       health.value = await programmeRepository.getHealth();
       if (!health.value.ok) {
-        error.value = health.value.error ?? "Corpus indisponible.";
+        error.value = health.value.error ?? "Le programme est momentanément indisponible.";
       }
     } catch (e) {
       error.value =
-        e instanceof Error ? e.message : "Serveur injoignable.";
+        e instanceof Error ? e.message : "Serveur injoignable. Réessayez dans un instant.";
       health.value = null;
     } finally {
       loading.value = false;

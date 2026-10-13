@@ -12,13 +12,18 @@ export async function httpJson<T>(
   path: string,
   init?: RequestInit,
 ): Promise<T> {
-  const res = await fetch(path, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {}),
-    },
-  });
+  let res: Response;
+  try {
+    res = await fetch(path, {
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        ...(init?.headers ?? {}),
+      },
+    });
+  } catch {
+    throw new ApiError("Serveur injoignable. Réessayez dans un instant.", 0);
+  }
 
   let body: unknown = null;
   const text = await res.text();
@@ -37,7 +42,7 @@ export async function httpJson<T>(
       "detail" in body &&
       typeof (body as { detail: unknown }).detail === "string"
         ? (body as { detail: string }).detail
-        : `Erreur HTTP ${res.status}`;
+        : "Une erreur est survenue. Réessayez.";
     throw new ApiError(detail, res.status);
   }
 

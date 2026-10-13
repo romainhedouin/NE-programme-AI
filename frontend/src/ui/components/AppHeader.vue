@@ -53,7 +53,7 @@ defineProps<{
 
         <!-- Affiché seulement en cas de problème -->
         <p v-if="!loading && (error || !hasApiKey)" class="status err" aria-live="polite">
-          {{ error ?? "Clé Mistral manquante (.env) : le mode « Demander » est indisponible." }}
+          {{ error ?? "Le mode « Demander » est momentanément indisponible." }}
         </p>
       </div>
     </section>
