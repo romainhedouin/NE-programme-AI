@@ -222,7 +222,7 @@ def _embed_query(query: str) -> np.ndarray | None:
     if not api_key or api_key.startswith("your_"):
         return None
 
-    model = os.getenv("MISTRAL_EMBED_MODEL", emb["meta"].get("model", "mistral-embed"))
+    model = emb["meta"].get("model") or os.getenv("MISTRAL_EMBED_MODEL", "mistral-embed")
     return _embed_text(model, expand_query(query).strip())
 
 
@@ -237,6 +237,9 @@ def _semantic_ranked(query: str) -> list[tuple[str, float]]:
         print(f"Embedding de la requête impossible, repli lexical : {exc}")
         return []
     if qvec is None:
+        return []
+    if qvec.shape[0] != emb["vectors"].shape[1]:
+        print("Dimension de la requête différente de celle des embeddings, repli lexical")
         return []
     sims = emb["vectors"] @ qvec  # vectors are L2-normalized
     order = np.argsort(-sims)
