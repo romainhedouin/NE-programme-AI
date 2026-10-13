@@ -110,7 +110,7 @@ def load_embeddings() -> dict | None:
     mtime = EMBED_NPZ.stat().st_mtime
     if _embeddings_cache is not None and _embeddings_mtime == mtime:
         return _embeddings_cache
-    data = np.load(EMBED_NPZ, allow_pickle=True)
+    data = np.load(EMBED_NPZ, allow_pickle=False)
     ids = [str(x) for x in data["ids"].tolist()]
     vectors = data["vectors"].astype(np.float32)
     meta = {}
