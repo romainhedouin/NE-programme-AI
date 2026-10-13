@@ -8,7 +8,10 @@ Prérequis : API FastAPI sur le port 8000.
 
 ```bash
 # terminal 1 — racine du repo
+# Windows
 .venv\Scripts\activate
+# macOS / Linux
+source .venv/bin/activate
 uvicorn app.main:app --reload --port 8000
 
 # terminal 2 — frontend
@@ -18,7 +21,7 @@ npm run dev
 ```
 
 Ouvrir [http://127.0.0.1:5173](http://127.0.0.1:5173)  
-Vite proxye `/api` → `http://127.0.0.1:8000`.
+Vite redirige `/api` → `http://127.0.0.1:8000`.
 
 ## Build production
 
@@ -34,8 +37,8 @@ Génère `frontend/dist/`. FastAPI sert alors cette UI sur [http://127.0.0.1:800
 ```
 src/
 ├── domain/            # modèles + ports (pas de Vue, pas de fetch)
-├── application/       # use-cases (composables)
-├── infrastructure/    # HTTP Mistral/API, composition root
+├── application/       # cas d’usage (composables)
+├── infrastructure/    # client HTTP de l’API, composition root
 └── ui/                # composants Vue + styles
 ```
 

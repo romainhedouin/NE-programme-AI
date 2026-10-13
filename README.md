@@ -1,6 +1,6 @@
 # Questions sourcées sur le programme Lisnard
 
-Outil open-source pour interroger le programme de David Lisnard **uniquement** à partir du site officiel [unenouvelleenergie.fr/notre-programme](https://www.unenouvelleenergie.fr/notre-programme/).
+Outil open source pour interroger le programme de David Lisnard **uniquement** à partir du site officiel [unenouvelleenergie.fr/notre-programme](https://www.unenouvelleenergie.fr/notre-programme/).
 
 **Règle d’or :** chaque réponse s’appuie sur des extraits du corpus local, avec citation (page, section, paragraphe, URL). Si rien de pertinent n’est trouvé → *« Aucune réponse trouvée dans le programme officiel. »*  
 Ce n’est **pas** le site officiel du parti.
@@ -43,7 +43,7 @@ Deux modes dans l’UI :
 ### Flux
 
 1. **Scrape** (manuel) → corpus JSON sourcé  
-2. **Embed** (manuel, une fois la clé dispo) → vecteurs pré-calculés  
+2. **Embed** (manuel, une fois la clé disponible) → vecteurs pré-calculés  
 3. **Question / recherche** → score **hybride** (mots-clés + similarité cosinus)  
 4. Mode *Demander* : top passages → Mistral chat (prompt strict)  
 5. Mode *Chercher* : top passages affichés tels quels  
@@ -76,16 +76,16 @@ Détail du front : voir [`frontend/README.md`](frontend/README.md).
 | `scripts/scrape_programme.py` | Extraction site officiel |
 | `scripts/embed_programme.py` | Embeddings `mistral-embed` |
 | `frontend/src/domain/` | Modèles + ports |
-| `frontend/src/application/` | Use-cases (`useHealth`, `useProgrammeQuery`) |
-| `frontend/src/infrastructure/` | Client HTTP API |
+| `frontend/src/application/` | Cas d’usage (`useHealth`, `useProgrammeQuery`, `useShareCard`) |
+| `frontend/src/infrastructure/` | Client HTTP API, rendu canvas du visuel de partage (`renderShareCard`) |
 | `frontend/src/ui/` | Composants Vue |
 
 ---
 
 ## Prérequis
 
-- Python 3.11+
-- Node.js 20+ (front)
+- Python 3.13+
+- Node.js 22.12+ (front)
 - Clé API [Mistral](https://console.mistral.ai/)
 
 ---
@@ -102,7 +102,11 @@ python -m venv .venv
 source .venv/bin/activate
 
 pip install -r requirements.txt
-copy .env.example .env   # puis renseigner MISTRAL_API_KEY
+# macOS / Linux
+cp .env.example .env
+# Windows
+copy .env.example .env
+# puis renseigner MISTRAL_API_KEY dans .env
 ```
 
 ```bash
