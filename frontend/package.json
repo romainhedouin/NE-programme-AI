@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource/montserrat": "^5.3.0",
     "dompurify": "^3.4.16",
     "marked": "^18.1.0",
     "vue": "^3.5.22"
