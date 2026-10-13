@@ -33,6 +33,8 @@ CHAT_MAX_TOKENS = _env_int("CHAT_MAX_TOKENS", 1200)
 
 _lock = threading.Lock()
 _hits: dict[tuple[str, str, int], deque[float]] = {}
+_last_sweep = 0.0
+SWEEP_INTERVAL = 60
 _global_day = date.today()
 _global_chat_count = 0
 
@@ -47,10 +49,28 @@ def client_ip(request: Request) -> str:
 
 
 def _window(ip: str, bucket: str, window: int, now: float) -> deque[float]:
-    hits = _hits.setdefault((ip, bucket, window), deque())
+    key = (ip, bucket, window)
+    hits = _hits.get(key)
+    if hits is None:
+        return deque()
     while hits and hits[0] <= now - window:
         hits.popleft()
+    if not hits:
+        del _hits[key]
     return hits
+
+
+def _record(ip: str, bucket: str, window: int, now: float) -> None:
+    _hits.setdefault((ip, bucket, window), deque()).append(now)
+
+
+def _sweep(now: float) -> None:
+    global _last_sweep
+    if now - _last_sweep < SWEEP_INTERVAL:
+        return
+    _last_sweep = now
+    for ip, bucket, window in list(_hits):
+        _window(ip, bucket, window, now)
 
 
 def _too_many(message: str) -> HTTPException:
@@ -59,11 +79,12 @@ def _too_many(message: str) -> HTTPException:
 
 def check_search(request: Request) -> None:
     now = time.monotonic()
+    ip = client_ip(request)
     with _lock:
-        minute = _window(client_ip(request), "search", 60, now)
-        if len(minute) >= SEARCH_PER_MINUTE:
+        _sweep(now)
+        if len(_window(ip, "search", 60, now)) >= SEARCH_PER_MINUTE:
             raise _too_many("Trop de recherches en peu de temps. Réessayez dans une minute.")
-        minute.append(now)
+        _record(ip, "search", 60, now)
 
 
 def check_chat(request: Request) -> None:
@@ -71,6 +92,7 @@ def check_chat(request: Request) -> None:
     ip = client_ip(request)
     now = time.monotonic()
     with _lock:
+        _sweep(now)
         today = date.today()
         if today != _global_day:
             _global_day, _global_chat_count = today, 0
@@ -88,6 +110,6 @@ def check_chat(request: Request) -> None:
                 "Vous avez atteint la limite de questions pour aujourd'hui. "
                 "Le mode « Chercher » reste disponible."
             )
-        minute.append(now)
-        day.append(now)
+        _record(ip, "chat", 60, now)
+        _record(ip, "chat", 86400, now)
         _global_chat_count += 1
