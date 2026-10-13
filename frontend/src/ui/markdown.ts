@@ -9,6 +9,20 @@ DOMPurify.addHook("afterSanitizeAttributes", (node) => {
   }
 });
 
+// Le HTML brut et les images n'ont pas leur place dans une réponse : on les supprime dès le Markdown
+marked.use({ renderer: { html: () => "", image: () => "" } });
+
+const SANITIZE_CONFIG = {
+  ALLOWED_TAGS: [
+    "p", "br", "hr", "strong", "em", "ul", "ol", "li", "blockquote", "code", "pre",
+    "h1", "h2", "h3", "h4", "h5", "h6", "a",
+  ],
+  ALLOWED_ATTR: ["href"],
+  ALLOWED_URI_REGEXP: /^https:\/\//i,
+  ALLOW_DATA_ATTR: false,
+  ALLOW_ARIA_ATTR: false,
+};
+
 const CITATION = /\[(\d{1,2})\]/g;
 
 /**
@@ -16,10 +30,8 @@ const CITATION = /\[(\d{1,2})\]/g;
  * Ne touche qu'aux nœuds texte (jamais aux attributs) et ignore les numéros
  * qui ne correspondent à aucune source.
  */
-function linkCitations(html: string, sourceCount: number): string {
-  const template = document.createElement("template");
-  template.innerHTML = html;
-  const walker = document.createTreeWalker(template.content, NodeFilter.SHOW_TEXT);
+function linkCitations(root: DocumentFragment, sourceCount: number) {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   const textNodes: Text[] = [];
   while (walker.nextNode()) textNodes.push(walker.currentNode as Text);
 
@@ -47,12 +59,14 @@ function linkCitations(html: string, sourceCount: number): string {
     fragment.append(text.slice(last));
     node.replaceWith(fragment);
   }
-  return template.innerHTML;
 }
 
 /** Markdown du LLM → HTML assaini (aucun script, aucun attribut dangereux). */
 export function renderMarkdown(text: string, sourceCount = 0): string {
   const html = marked.parse(text, { async: false, gfm: true, breaks: true });
-  const clean = DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
-  return sourceCount > 0 ? linkCitations(clean, sourceCount) : clean;
+  const clean = DOMPurify.sanitize(html, { ...SANITIZE_CONFIG, RETURN_DOM_FRAGMENT: true });
+  if (sourceCount > 0) linkCitations(clean, sourceCount);
+  const container = document.createElement("div");
+  container.append(clean);
+  return container.innerHTML;
 }
