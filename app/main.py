@@ -93,7 +93,7 @@ def to_sources(chunks: list[dict]) -> list[SourceOut]:
             paragraph=c["paragraph"],
             url=c["url"],
             score=c["score"],
-            excerpt=c["text"][:280] + ("…" if len(c["text"]) > 280 else ""),
+            excerpt=c["text"],
             score_lexical=c.get("score_lexical"),
             score_semantic=c.get("score_semantic"),
             retrieval=c.get("retrieval"),
