@@ -9,7 +9,8 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.responses import FileResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from mistralai.client import Mistral
 from pydantic import BaseModel, Field
@@ -189,15 +190,27 @@ def short_link(code: str) -> RedirectResponse:
 
 
 # --- Front : build Vue (frontend/dist) ---
+app.add_middleware(GZipMiddleware, minimum_size=1024)
+
+
+class HashedAssets(StaticFiles):
+    """Assets Vite au nom haché : le contenu d'une URL ne change jamais."""
+
+    def file_response(self, *args, **kwargs) -> Response:
+        response = super().file_response(*args, **kwargs)
+        response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        return response
+
+
 if (DIST_DIR / "assets").exists():
-    app.mount("/assets", StaticFiles(directory=DIST_DIR / "assets"), name="assets")
+    app.mount("/assets", HashedAssets(directory=DIST_DIR / "assets"), name="assets")
 
 
 @app.get("/")
 def index() -> FileResponse:
     vue_index = DIST_DIR / "index.html"
     if vue_index.exists():
-        return FileResponse(vue_index)
+        return FileResponse(vue_index, headers={"Cache-Control": "no-cache"})
     raise HTTPException(
         status_code=503,
         detail="Front introuvable. Lancez `cd frontend && npm run build`.",
@@ -210,4 +223,4 @@ def public_file(filename: str) -> FileResponse:
     path = (DIST_DIR / filename).resolve()
     if path.parent != DIST_DIR.resolve() or not path.is_file():
         raise HTTPException(status_code=404, detail="Introuvable.")
-    return FileResponse(path)
+    return FileResponse(path, headers={"Cache-Control": "public, max-age=86400"})
