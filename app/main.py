@@ -15,6 +15,7 @@ from mistralai.client import Mistral
 from pydantic import BaseModel, Field
 
 from app.limits import CHAT_MAX_TOKENS, check_chat, check_search
+from app.mistral_client import shared_client
 from app.prompts import SYSTEM_PROMPT, build_user_prompt
 from app.retrieve import embeddings_status, load_corpus, search
 
@@ -64,7 +65,7 @@ def mistral_client() -> Mistral:
             status_code=503,
             detail="MISTRAL_API_KEY manquante. Copiez .env.example vers .env et renseignez la clé.",
         )
-    return Mistral(api_key=key)
+    return shared_client(key)
 
 
 def _has_api_key() -> bool:

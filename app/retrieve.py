@@ -203,9 +203,9 @@ def _lexical_ranked(query: str) -> list[tuple[str, float]]:
 @lru_cache(maxsize=512)
 def _embed_text(model: str, text: str) -> np.ndarray | None:
     """Embedding d'une requête, mis en cache : une même question ne coûte qu'une fois."""
-    from mistralai.client import Mistral
+    from app.mistral_client import shared_client
 
-    client = Mistral(api_key=os.getenv("MISTRAL_API_KEY", "").strip())
+    client = shared_client(os.getenv("MISTRAL_API_KEY", "").strip())
     resp = client.embeddings.create(model=model, inputs=[text])
     vec = np.asarray(resp.data[0].embedding, dtype=np.float32)
     norm = float(np.linalg.norm(vec))
