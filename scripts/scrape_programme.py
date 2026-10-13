@@ -21,7 +21,8 @@ from urllib.parse import urljoin, urlparse
 import httpx
 from bs4 import BeautifulSoup
 
-BASE = "https://www.unenouvelleenergie.fr"
+HOST = "www.unenouvelleenergie.fr"
+BASE = f"https://{HOST}"
 SITEMAPS = [
     f"{BASE}/pages-sitemap.xml",
     f"{BASE}/questions-sitemap.xml",
@@ -42,6 +43,26 @@ def norm_space(text: str) -> str:
     return re.sub(r"[ \t]+", " ", text).strip()
 
 
+def is_official_url(url: str) -> bool:
+    parts = urlparse(url)
+    return parts.scheme == "https" and parts.netloc == HOST
+
+
+def _refuse_foreign_host(request: httpx.Request) -> None:
+    if not is_official_url(str(request.url)):
+        raise httpx.RequestError(f"Hôte non autorisé : {request.url}", request=request)
+
+
+def make_client(transport: httpx.BaseTransport | None = None) -> httpx.Client:
+    headers = {"User-Agent": USER_AGENT, "Accept-Language": "fr"}
+    return httpx.Client(
+        headers=headers,
+        follow_redirects=True,
+        event_hooks={"request": [_refuse_foreign_host]},
+        transport=transport,
+    )
+
+
 def fetch(client: httpx.Client, url: str) -> str:
     r = client.get(url, timeout=45.0)
     r.raise_for_status()
@@ -54,6 +75,8 @@ def sitemap_urls(client: httpx.Client) -> list[str]:
     for sm in SITEMAPS:
         xml = fetch(client, sm)
         for loc in re.findall(r"<loc>(.*?)</loc>", xml):
+            if not is_official_url(loc):
+                continue
             path = urlparse(loc).path
             if any(path.startswith(p) for p in ALLOWED_PREFIXES):
                 # Skip index-only listing pages with little content
@@ -150,12 +173,11 @@ def extract_chunks(url: str, html: str) -> list[dict]:
 
 def main() -> None:
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    headers = {"User-Agent": USER_AGENT, "Accept-Language": "fr"}
     all_chunks: list[dict] = []
     pages: list[dict] = []
     errors = 0
 
-    with httpx.Client(headers=headers, follow_redirects=True) as client:
+    with make_client() as client:
         urls = sitemap_urls(client)
         print(f"{len(urls)} pages à extraire…")
         for i, url in enumerate(urls, 1):
