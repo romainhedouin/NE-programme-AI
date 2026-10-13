@@ -53,6 +53,8 @@ PHRASE_TO_ACRONYM = {
 NOISE_SECTION_PREFIXES = (
     "questions voisines",
     "les dernieres actualites",
+    "decouvrez",
+    "les questions, une par une",
 )
 
 RRF_K = 60

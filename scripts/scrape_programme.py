@@ -87,10 +87,40 @@ SKIP_SECTION_PREFIXES = (
     "les questions qu",
     "chacune a sa page",
     "découvrir",
+    "découvrez",
     # Listes de liens (navigation), sans contenu programmatique
     "questions voisines",
     "les dernières actualités",
+    "les questions, une par une",
 )
+
+# Appels à l'action et vignettes de liens, sans contenu programmatique
+BOILERPLATE_RE = re.compile(
+    r"^(?:(?:le sujet en entier|pour approfondir)\s*:.{0,60}|.+\bdécouvrir\s*→)$",
+    re.IGNORECASE,
+)
+LINK_LABEL_RE = re.compile(r"\s*·\s*voir l[’']intervention\s*$", re.IGNORECASE)
+ATTRIBUTION_RE = re.compile(r"^(?:D[’']après|Élément de contexte)\b")
+
+
+def is_boilerplate(text: str) -> bool:
+    return bool(BOILERPLATE_RE.match(text))
+
+
+def strip_link_label(text: str) -> str:
+    return LINK_LABEL_RE.sub("", text)
+
+
+def drop_duplicates(chunks: list[dict], seen: set[str]) -> list[dict]:
+    """Écarte les passages déjà vus sur une autre page ; les mentions de source restent."""
+    kept = []
+    for chunk in chunks:
+        if not ATTRIBUTION_RE.match(chunk["text"]):
+            if chunk["text"] in seen:
+                continue
+            seen.add(chunk["text"])
+        kept.append(chunk)
+    return kept
 
 
 def extract_chunks(url: str, html: str) -> list[dict]:
@@ -130,7 +160,7 @@ def extract_chunks(url: str, html: str) -> list[dict]:
 
         if skip_mode or any(lower.startswith(p) for p in SKIP_SECTION_PREFIXES):
             continue
-        if len(text) < 40:
+        if len(text) < 40 or is_boilerplate(text):
             continue
 
         paragraph_index += 1
@@ -142,7 +172,7 @@ def extract_chunks(url: str, html: str) -> list[dict]:
                 "page_title": title,
                 "section": current_section,
                 "paragraph": paragraph_index,
-                "text": text,
+                "text": strip_link_label(text),
             }
         )
     return chunks
@@ -153,6 +183,7 @@ def main() -> None:
     headers = {"User-Agent": USER_AGENT, "Accept-Language": "fr"}
     all_chunks: list[dict] = []
     pages: list[dict] = []
+    seen_texts: set[str] = set()
     errors = 0
 
     with httpx.Client(headers=headers, follow_redirects=True) as client:
@@ -161,7 +192,7 @@ def main() -> None:
         for i, url in enumerate(urls, 1):
             try:
                 html = fetch(client, url)
-                chunks = extract_chunks(url, html)
+                chunks = drop_duplicates(extract_chunks(url, html), seen_texts)
                 all_chunks.extend(chunks)
                 pages.append({"url": url, "chunks": len(chunks), "title": chunks[0]["page_title"] if chunks else ""})
                 print(f"[{i}/{len(urls)}] {len(chunks):3d} chunks  {url}")
