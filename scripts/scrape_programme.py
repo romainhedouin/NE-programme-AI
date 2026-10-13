@@ -116,9 +116,15 @@ def extract_chunks(url: str, html: str) -> list[dict]:
     paragraph_index = 0
     skip_mode = False
 
+    for tag in main.find_all(
+        ["br", "p", "div", "ul", "ol", "li", "blockquote", "h1", "h2", "h3", "h4", "h5", "h6", "table", "tr", "td", "th"]
+    ):
+        tag.insert_before(" ")
+        tag.insert_after(" ")
+
     blocks = main.find_all(["h1", "h2", "h3", "h4", "p", "li", "blockquote"])
     for el in blocks:
-        text = norm_space(el.get_text(" ", strip=True))
+        text = norm_space(el.get_text())
         if not text:
             continue
 
